@@ -1,6 +1,6 @@
 package com.oc.aoc;
 
-public class TestHelpers {
+public class TrebuchetTestHelpers {
 
     public static String[] examplesPart2 = { "two1nine", "eightwothree", "abcone2threexyz", "xtwone3four",  "4nineeightseven2", "zoneight234", "7pqrstsixteen" };
 

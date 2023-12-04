@@ -33,7 +33,7 @@ public class TrebuchetTests {
 
     @Test
     void calibrateDocument_returns_expectedResult() {
-        String[] calibrationReading = TestHelpers.calibrationDocument;
+        String[] calibrationReading = TrebuchetTestHelpers.calibrationDocument;
         int calibratedDocumentTotal = Trebuchet.calibrateDocument(calibrationReading);
 
         assertEquals(54418, calibratedDocumentTotal);

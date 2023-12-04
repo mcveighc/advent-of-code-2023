@@ -27,19 +27,6 @@
             <version>${junit.jupiter.version}</version>
             <scope>test</scope>
         </dependency>
-        
-        <dependency>
-            <groupId>net.jqwik</groupId>
-            <artifactId>jqwik</artifactId>
-            <version>1.8.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-engine</artifactId>
-            <version>1.10.1</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.javatuples</groupId>
             <artifactId>javatuples</artifactId>
