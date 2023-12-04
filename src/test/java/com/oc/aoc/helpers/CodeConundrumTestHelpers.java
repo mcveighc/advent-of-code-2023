@@ -1,4 +1,4 @@
-package com.oc.aoc;
+package com.oc.aoc.helpers;
 
 public class CodeConundrumTestHelpers {
 
