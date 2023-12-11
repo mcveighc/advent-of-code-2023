@@ -1,8 +1,12 @@
 package com.oc.aoc;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.Map;
+import java.util.function.Function;
+
+import org.javatuples.Pair;
 
 import com.oc.aoc.model.GearRationEnginePart;
 
@@ -23,6 +27,21 @@ public class GearRatios {
         }
 
         return grid;
+    }
+
+    public static int getEnginePartsSum(String schematic) {
+        int result = 0;
+
+        char[][] parsedSchematic = GearRatios.initSchematic(schematic);
+        List<GearRationEnginePart> parts = GearRatios.getGearEngineParts(parsedSchematic);
+
+        for (GearRationEnginePart part : parts) {
+            if (part.hasAdjacentSymbol()) {
+                result = result + part.getPartNumber();
+            }
+        }
+
+        return result;
     }
 
     public static List<GearRationEnginePart> getGearEngineParts(char[][] grid) {
@@ -59,71 +78,195 @@ public class GearRatios {
     }
 
     public static boolean hasAdjacentSymbol(char[][] grid, int xPos, int yPos) {
-        boolean isTopBorder = xPos == 0;
-        boolean isLeftBorder = yPos == 0;
-        boolean isBottomBorder = xPos == grid.length - 1;
-        boolean isRightBorder = yPos == grid[0].length - 1;
+        Function<Character, Boolean> isSymbolFunc = (c) -> !Character.isLetterOrDigit(c) && c != '.';
+        int totalAdjacentsRequired = 1;
 
-        List<Character> adjacentChars = new ArrayList<>();
+        List<Pair<Integer, Integer>> matchedAdjacents = getMatchingAdjacentPositions(grid, xPos, yPos,
+                isSymbolFunc, totalAdjacentsRequired);
 
-        if (!isBottomBorder) {
-            char xPlusOne = grid[xPos + 1][yPos];
-            adjacentChars.add(xPlusOne);
-        }
-        if (!isBottomBorder && !isRightBorder) {
-            char xPlusOneYPlusOne = grid[xPos + 1][yPos + 1];
-            adjacentChars.add(xPlusOneYPlusOne);
-        }
+        return matchedAdjacents.size() == totalAdjacentsRequired;
+    }
 
-        if (!isBottomBorder && !isLeftBorder) {
-            char xPlusOneYMinusOne = grid[xPos + 1][yPos - 1];
-            adjacentChars.add(xPlusOneYMinusOne);
-        }
+    private static Map<String, Pair<Integer, Integer>> getAdjacents(char[][] schematic, int x, int y) {
+        boolean isTopBorder = x == 0;
+        boolean isLeftBorder = y == 0;
+        boolean isBottomBorder = x == schematic.length - 1;
+        boolean isRightBorder = y == schematic[0].length - 1;
+
+        Map<String, Pair<Integer, Integer>> adjacents = new LinkedHashMap<>();
 
         if (!isTopBorder) {
-            char xMinusOne = grid[xPos - 1][yPos];
-            adjacentChars.add(xMinusOne);
+            adjacents.put("top", new Pair<Integer, Integer>(x - 1, y));
         }
-
         if (!isTopBorder && !isLeftBorder) {
-            char xMinusOneYMinusOne = grid[xPos - 1][yPos - 1];
-            adjacentChars.add(xMinusOneYMinusOne);
+            adjacents.put("top-left", new Pair<Integer, Integer>(x + -1, y - 1));
         }
-
         if (!isTopBorder && !isRightBorder) {
-            char xMinueOneYPlusOne = grid[xPos - 1][yPos + 1];
-            adjacentChars.add(xMinueOneYPlusOne);
+            adjacents.put("top-right", new Pair<Integer, Integer>(x - 1, y + 1));
         }
 
-        if (!isRightBorder) {
-            char yPlusOne = grid[xPos][yPos + 1];
-            adjacentChars.add(yPlusOne);
+        if (!isBottomBorder) {
+            adjacents.put("bottom", new Pair<Integer, Integer>(x + 1, y));
+        }
+        if (!isBottomBorder && !isLeftBorder) {
+            adjacents.put("bottom-left", new Pair<Integer, Integer>(x + 1, y - 1));
+        }
+        if (!isBottomBorder && !isRightBorder) {
+            adjacents.put("bottom-right", new Pair<Integer, Integer>(x + 1, y + 1));
         }
 
         if (!isLeftBorder) {
-            char yMinusOne = grid[xPos][yPos - 1];
-            adjacentChars.add(yMinusOne);
+            adjacents.put("left", new Pair<Integer, Integer>(x, y - 1));
         }
 
-        Predicate<? super Character> isAdjacentPredicate = c -> !Character.isLetterOrDigit(c) && c != '.';
+        if (!isRightBorder) {
+            adjacents.put("right", new Pair<Integer, Integer>(x, y + 1));
+        }
 
-        return adjacentChars.stream().anyMatch(isAdjacentPredicate);
+        return adjacents;
     }
 
-    public static int getEnginePartsSum(String schematic) {
+    private static List<Pair<Integer, Integer>> getMatchingAdjacentPositions(char[][] grid,
+            int x, int y,
+            Function<Character, Boolean> adjacentMatcherFunc,
+            int maxAdjacents) {
+
+        Map<String, Pair<Integer, Integer>> adjacents = getAdjacents(grid, x, y);
+        List<Pair<Integer, Integer>> matchedAdjacents = new ArrayList<>();
+
+        boolean hasMatchedTop = false;
+        boolean hasMatchedBottom = false;
+        for (String adjacentKey : adjacents.keySet()) {
+            boolean isTopAdjacent = adjacentKey.contains("top");
+            boolean isBottomeAdjacent = adjacentKey.contains("bottom");
+
+            if (matchedAdjacents.size() == maxAdjacents) {
+                continue;
+            }
+
+            if (isTopAdjacent && hasMatchedTop) {
+                continue;
+            }
+
+            if (isBottomeAdjacent && hasMatchedBottom) {
+                continue;
+            }
+
+            Pair<Integer, Integer> adjacentPos = adjacents.get(adjacentKey);
+
+            int adjacentX = adjacentPos.getValue0();
+            int adjacentY = adjacentPos.getValue1();
+
+            Character adjacentChar = grid[adjacentX][adjacentY];
+
+            boolean hasMatchingAdjacentChar = adjacentMatcherFunc.apply(adjacentChar);
+            if (hasMatchingAdjacentChar) {
+                matchedAdjacents.add(adjacentPos);
+
+            }
+
+            hasMatchedTop = adjacentKey.equals("top") && hasMatchingAdjacentChar;
+            hasMatchedBottom = adjacentKey.equals("bottom") && hasMatchingAdjacentChar;
+        }
+
+        return matchedAdjacents;
+    }
+
+    public static int getGearRatiosSum(String schematic) {
         int result = 0;
 
         char[][] parsedSchematic = GearRatios.initSchematic(schematic);
-        List<GearRationEnginePart> parts = GearRatios.getGearEngineParts(parsedSchematic);
+        List<Pair<Integer, Integer>> gearRatioPairs = GearRatios.getRatioGearPairs(parsedSchematic);
 
-        for(GearRationEnginePart part : parts) {
-            if(part.hasAdjacentSymbol()) {
-                result = result + part.getPartNumber();
-            }
+        for (Pair<Integer, Integer> gearRatioPair : gearRatioPairs) {
+            int leftPart = gearRatioPair.getValue0();
+            int rightPart = gearRatioPair.getValue1();
+            int sum = leftPart * rightPart;
+
+            result = result + sum;
         }
 
         return result;
-
     }
 
+    public static List<Pair<Integer, Integer>> getRatioGearPairs(char[][] parsedSchematic) {
+        int rowLength = parsedSchematic.length;
+        int colLength = parsedSchematic[0].length;
+        Function<Character, Boolean> func = (c) -> Character.isDigit(c);
+
+        List<Pair<Integer, Integer>> pairs = new ArrayList<>();
+        for (int x = 0; x < rowLength; x++) {
+            for (int y = 0; y < colLength; y++) {
+                char item = parsedSchematic[x][y];
+                if (item != '*') {
+                    continue;
+                }
+                List<Pair<Integer, Integer>> matchingAdjacents = getMatchingAdjacentPositions(parsedSchematic,
+                        x, y, func, 2);
+
+                if (matchingAdjacents.size() != 2) {
+                    continue;
+                }
+
+                int enginePart1 = getGearRatioEnginePart(parsedSchematic, matchingAdjacents.get(0).getValue0(),
+                        matchingAdjacents.get(0).getValue1());
+                int enginePart2 = getGearRatioEnginePart(parsedSchematic, matchingAdjacents.get(1).getValue0(),
+                        matchingAdjacents.get(1).getValue1());
+
+                Pair<Integer, Integer> gearRatioPair = Pair.with(enginePart1, enginePart2);
+                pairs.add(gearRatioPair);
+            }
+        }
+
+        return pairs;
+    }
+
+    public static Integer getGearRatioEnginePart(char[][] parsedSchematic, int xPos, int yPos) {
+        char digit = parsedSchematic[xPos][yPos];
+
+        int borderLeft = 0;
+        int borderRight = parsedSchematic[0].length - 1;
+
+        boolean leftDigitExists = true;
+        boolean rightDigitExists = true;
+
+        boolean hasReachedLeftEnd = false;
+        boolean hasReachedRightEnd = false;
+
+        int index = 1;
+
+        String result = String.valueOf(digit);
+
+        while (leftDigitExists == true || rightDigitExists == true) {
+            int leftPos = yPos - index;
+            int rightPos = yPos + index;
+
+            char leftItem = leftPos < borderLeft ? '.' : parsedSchematic[xPos][leftPos];
+            char rightItem = rightPos > borderRight ? '.' : parsedSchematic[xPos][rightPos];
+
+            leftDigitExists = Character.isDigit(leftItem);
+            rightDigitExists = Character.isDigit(rightItem);
+
+            if (!hasReachedLeftEnd) {
+                hasReachedLeftEnd = !leftDigitExists;
+            }
+
+            if (!hasReachedRightEnd) {
+                hasReachedRightEnd = !rightDigitExists;
+            }
+
+            if (leftDigitExists && !hasReachedLeftEnd) {
+                result = String.valueOf(leftItem) + result;
+            }
+
+            if (rightDigitExists && !hasReachedRightEnd) {
+                result = result + String.valueOf(rightItem);
+            }
+
+            index++;
+        }
+
+        return Integer.parseInt(result);
+
+    }
 }
